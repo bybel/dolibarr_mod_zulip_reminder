@@ -19,13 +19,14 @@ class ZulipClient
 	}
 
 	/**
-	 * Send a direct message to a user by email
+	 * Send a message to a stream (channel)
 	 * 
-	 * @param string $to_email User email
+	 * @param string $stream Stream name
+	 * @param string $topic Topic name
 	 * @param string $content Message content
 	 * @return bool true on success, false on failure
 	 */
-	public function sendPrivateMessage($to_email, $content)
+	public function sendStreamMessage($stream, $topic, $content)
 	{
 		if (empty($this->server_url) || empty($this->bot_email) || empty($this->bot_api_key)) {
 			$this->error = "Zulip API credentials are not configured.";
@@ -33,8 +34,8 @@ class ZulipClient
 			return false;
 		}
 
-		if (empty($to_email)) {
-			$this->error = "ZulipClient: No destination email provided.";
+		if (empty($stream)) {
+			$this->error = "ZulipClient: No destination stream provided.";
 			dol_syslog($this->error, LOG_ERR);
 			return false;
 		}
@@ -42,8 +43,9 @@ class ZulipClient
 		$endpoint = $this->server_url . "/api/v1/messages";
 
 		$data = array(
-			'type' => 'private',
-			'to' => $to_email,
+			'type' => 'stream',
+			'to' => $stream,
+			'topic' => $topic,
 			'content' => $content
 		);
 
@@ -60,7 +62,7 @@ class ZulipClient
 		curl_close($ch);
 
 		if ($httpCode == 200) {
-			dol_syslog('ZulipClient: Message successfully sent to ' . $to_email);
+			dol_syslog('ZulipClient: Message successfully sent to stream ' . $stream);
 			return true;
 		} else {
 			$this->error = "Zulip API error HTTP " . $httpCode . ", Response: " . $response . ", cURL Error: " . $curlError;

@@ -44,6 +44,30 @@ $item->fieldParams['isMandatory'] = 1;
 $item->fieldAttr['placeholder'] = 'Secret API Key';
 $item->cssClass = 'minwidth500';
 
+$item = $formSetup->newItem('ZULIP_STREAM_PO');
+$item->fieldAttr['placeholder'] = 'Purchasing';
+$item->cssClass = 'minwidth500';
+
+$item = $formSetup->newItem('ZULIP_STREAM_PR');
+$item->fieldAttr['placeholder'] = 'Sales';
+$item->cssClass = 'minwidth500';
+
+$item = $formSetup->newItem('ZULIP_STREAM_CO');
+$item->fieldAttr['placeholder'] = 'Sales';
+$item->cssClass = 'minwidth500';
+
+$item = $formSetup->newItem('ZULIP_STREAM_FA');
+$item->fieldAttr['placeholder'] = 'Accounting';
+$item->cssClass = 'minwidth500';
+
+$item = $formSetup->newItem('ZULIP_STREAM_SI');
+$item->fieldAttr['placeholder'] = 'Accounting';
+$item->cssClass = 'minwidth500';
+
+$item = $formSetup->newItem('ZULIP_STREAM_PJ');
+$item->fieldAttr['placeholder'] = 'Projects';
+$item->cssClass = 'minwidth500';
+
 include DOL_DOCUMENT_ROOT.'/core/actions_setmoduleoptions.inc.php';
 
 $title = "Zulip Reminder Setup";

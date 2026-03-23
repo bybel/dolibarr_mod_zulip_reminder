@@ -28,38 +28,50 @@ class ZulipReminderCron extends CommonObject
 			// Purchase Orders (PO)
 			'CommandeFournisseur' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE fk_statut IN (1,2,3,4) AND date_livraison < NOW()",
-				'element' => 'order_supplier'
+				'element' => 'order_supplier',
+				'stream_var' => 'ZULIP_STREAM_PO'
 			),
 			// Commercial Proposals (PR)
 			'Propal' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."propal WHERE fk_statut = 1 AND fin_validite < NOW()",
-				'element' => 'propal'
+				'element' => 'propal',
+				'stream_var' => 'ZULIP_STREAM_PR'
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande WHERE fk_statut IN (1,2) AND date_livraison < NOW()",
-				'element' => 'commande'
+				'element' => 'commande',
+				'stream_var' => 'ZULIP_STREAM_CO'
 			),
 			// Customer Invoices (FA)
 			'Facture' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
-				'element' => 'facture'
+				'element' => 'facture',
+				'stream_var' => 'ZULIP_STREAM_FA'
 			),
 			// Supplier Invoices (SI)
 			'FactureFournisseur' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture_fourn WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
-				'element' => 'invoice_supplier'
+				'element' => 'invoice_supplier',
+				'stream_var' => 'ZULIP_STREAM_SI'
 			),
 			// Projects (PJ)
 			'Project' => array(
 				'sql' => "SELECT rowid, ref, fk_user_creat as fk_user_author FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut = 1 AND date_fin < NOW()",
-				'element' => 'project'
+				'element' => 'project',
+				'stream_var' => 'ZULIP_STREAM_PJ'
 			)
 		);
 
 		$messages_sent = 0;
 
 		foreach ($queries as $type => $data) {
+			$stream = getDolGlobalString($data['stream_var']);
+			if (empty($stream)) {
+				dol_syslog('ZulipReminderCron: No stream configured for ' . $type);
+				continue;
+			}
+
 			$resql = $this->db->query($data['sql']);
 			if ($resql) {
 				while ($obj = $this->db->fetch_object($resql)) {
@@ -87,19 +99,24 @@ class ZulipReminderCron extends CommonObject
 					
 					// Unique Users
 					$user_ids = array_unique($user_ids);
+					$mentions = array();
 					
-					// Send messages
 					foreach ($user_ids as $uid) {
 						$user_email = $this->getUserEmail($uid);
 						if (!empty($user_email)) {
-							$content = "Reminder: **" . $type . "** with ref **" . $obj->ref . "** is currently marked as late in Dolibarr.";
-							if ($client->sendPrivateMessage($user_email, $content)) {
-								$messages_sent++;
-							} else {
-								$this->error .= "Failed to send to $user_email for $type $obj->ref. ";
-								$error++;
-							}
+							$mentions[] = "@**" . $user_email . "**";
 						}
+					}
+					
+					$responsible_text = empty($mentions) ? "No assigned users" : implode(", ", $mentions);
+					$content = "Reminder: **" . $type . "** with ref **" . $obj->ref . "** is currently marked as late in Dolibarr.\nResponsible: " . $responsible_text;
+					$topic = "Late " . $type . ": " . $obj->ref;
+					
+					if ($client->sendStreamMessage($stream, $topic, $content)) {
+						$messages_sent++;
+					} else {
+						$this->error .= "Failed to send stream message for $type $obj->ref. ";
+						$error++;
 					}
 				}
 				$this->db->free($resql);

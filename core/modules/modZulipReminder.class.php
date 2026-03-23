@@ -27,7 +27,7 @@ class modZulipReminder extends DolibarrModules
 		$this->dirs = array();
 
 		// We will create a simple setup page
-		$this->config_page_url = array("setup.php@zulipreminder");
+		$this->config_page_url = array("../custom/zulipreminder/admin/setup.php");
 		
 		$this->depends = array();
 		$this->requiredby = array();

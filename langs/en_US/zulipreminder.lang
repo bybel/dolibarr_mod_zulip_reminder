@@ -1,0 +1,8 @@
+ModuleZulipReminderName=Zulip Reminder Module
+ZulipReminderSetup=Zulip Reminder Setup
+ZULIP_SERVER_URL=Zulip Server URL
+ZULIP_SERVER_URLTooltip=The base URL for your Zulip server (e.g. https://your-domain.zulipchat.com)
+ZULIP_BOT_EMAIL=Zulip Bot Email
+ZULIP_BOT_EMAILTooltip=The email address of the bot created in Zulip integrations
+ZULIP_BOT_API_KEY=Zulip Bot API Key
+ZULIP_BOT_API_KEYTooltip=The API key of the Zulip Bot

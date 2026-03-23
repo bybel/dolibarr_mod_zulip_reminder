@@ -104,7 +104,14 @@ class ZulipReminderCron extends CommonObject
 					foreach ($user_ids as $uid) {
 						$user_email = $this->getUserEmail($uid);
 						if (!empty($user_email)) {
-							$mentions[] = "@**" . $user_email . "**";
+							// Try to resolve exactly from Zulip API
+							$zuser = $client->getUserByEmail($user_email);
+							if ($zuser && isset($zuser['user_id']) && isset($zuser['full_name'])) {
+								$mentions[] = "@**" . $zuser['full_name'] . "|" . $zuser['user_id'] . "**";
+							} else {
+								// Fallback to text email
+								$mentions[] = $user_email;
+							}
 						}
 					}
 					

@@ -64,6 +64,9 @@ class ZulipReminderCron extends CommonObject
 		);
 
 		$messages_sent = 0;
+		$test_mode_email = 'your.email@example.com'; // TODO: REPLACE WITH YOUR ZULIP EMAIL
+		$test_messages_limit = 5; // Limiting to 5 so you don't actually get 500 direct messages during tests
+		$test_messages_count = 0;
 
 		foreach ($queries as $type => $data) {
 			$stream = getDolGlobalString($data['stream_var']);
@@ -119,12 +122,28 @@ class ZulipReminderCron extends CommonObject
 					$content = "Reminder: **" . $type . "** with ref **" . $obj->ref . "** is currently marked as late in Dolibarr.\nResponsible: " . $responsible_text;
 					$topic = "Late " . $type . ": " . $obj->ref;
 					
+					// TESTING MODE: Send direct message instead of stream
+					if ($test_messages_count < $test_messages_limit) {
+						if ($client->sendPrivateMessage($test_mode_email, $content)) {
+							$messages_sent++;
+							$test_messages_count++;
+						} else {
+							$this->error .= "Failed to send private message for $type $obj->ref. ";
+							$error++;
+						}
+					} else {
+						// Stop loop once we hit the test limit
+						break 2;
+					}
+					
+					/* PRODUCTION MODE: Uncomment this and remove the testing mode above when ready
 					if ($client->sendStreamMessage($stream, $topic, $content)) {
 						$messages_sent++;
 					} else {
 						$this->error .= "Failed to send stream message for $type $obj->ref. ";
 						$error++;
 					}
+					*/
 				}
 				$this->db->free($resql);
 			} else {

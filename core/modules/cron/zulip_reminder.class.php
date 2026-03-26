@@ -29,52 +29,55 @@ class ZulipReminderCron extends CommonObject
 			'CommandeFournisseur' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE fk_statut IN (1,2,3,4) AND date_livraison < NOW()",
 				'element' => 'order_supplier',
-				'stream_var' => 'ZULIP_STREAM_PO'
+				'stream_var' => 'ZULIP_STREAM_PO',
+				'url_path' => '/fourn/commande/card.php?id='
 			),
 			// Commercial Proposals (PR)
 			'Propal' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."propal WHERE fk_statut = 1 AND fin_validite < NOW()",
 				'element' => 'propal',
-				'stream_var' => 'ZULIP_STREAM_PR'
+				'stream_var' => 'ZULIP_STREAM_PR',
+				'url_path' => '/comm/propal/card.php?id='
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande WHERE fk_statut IN (1,2) AND date_livraison < NOW()",
 				'element' => 'commande',
-				'stream_var' => 'ZULIP_STREAM_CO'
+				'stream_var' => 'ZULIP_STREAM_CO',
+				'url_path' => '/commande/card.php?id='
 			),
 			// Customer Invoices (FA)
 			'Facture' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
 				'element' => 'facture',
-				'stream_var' => 'ZULIP_STREAM_FA'
+				'stream_var' => 'ZULIP_STREAM_FA',
+				'url_path' => '/compta/facture/card.php?id='
 			),
 			// Supplier Invoices (SI)
 			'FactureFournisseur' => array(
 				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture_fourn WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
 				'element' => 'invoice_supplier',
-				'stream_var' => 'ZULIP_STREAM_SI'
+				'stream_var' => 'ZULIP_STREAM_SI',
+				'url_path' => '/fourn/facture/card.php?id='
 			),
 			// Projects (PJ)
 			'Project' => array(
 				'sql' => "SELECT rowid, ref, fk_user_creat as fk_user_author FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut = 1 AND date_fin < NOW()",
 				'element' => 'project',
-				'stream_var' => 'ZULIP_STREAM_PJ'
+				'stream_var' => 'ZULIP_STREAM_PJ',
+				'url_path' => '/projet/card.php?id='
 			)
 		);
 
 		$messages_sent = 0;
-		$test_mode_email = 'your.email@example.com'; // TODO: REPLACE WITH YOUR ZULIP EMAIL
-		$test_messages_limit = 5; // Limiting to 5 so you don't actually get 500 direct messages during tests
+		$test_mode_email = 'raphael.flueckiger@resilio-solutions.com'; // send to my DMs for testing. Set to empty '' for production.
+		$test_messages_limit = 5; 
 		$test_messages_count = 0;
 
-		foreach ($queries as $type => $data) {
-			$stream = getDolGlobalString($data['stream_var']);
-			if (empty($stream)) {
-				dol_syslog('ZulipReminderCron: No stream configured for ' . $type);
-				continue;
-			}
+		$user_reminders = array();
 
+		// 1. Collect all late objects per user
+		foreach ($queries as $type => $data) {
 			$resql = $this->db->query($data['sql']);
 			if ($resql) {
 				while ($obj = $this->db->fetch_object($resql)) {
@@ -102,52 +105,56 @@ class ZulipReminderCron extends CommonObject
 					
 					// Unique Users
 					$user_ids = array_unique($user_ids);
-					$mentions = array();
 					
+					if (empty($user_ids)) continue;
+					
+					$obj_url = constant('DOL_MAIN_URL_ROOT') . $data['url_path'] . $obj->rowid;
+					$obj_item = "- **" . $type . "** " . $obj->ref . ": [Link](" . $obj_url . ")";
+
 					foreach ($user_ids as $uid) {
-						$user_email = $this->getUserEmail($uid);
-						if (!empty($user_email)) {
-							// Try to resolve exactly from Zulip API
-							$zuser = $client->getUserByEmail($user_email);
-							if ($zuser && isset($zuser['user_id']) && isset($zuser['full_name'])) {
-								$mentions[] = "@**" . $zuser['full_name'] . "|" . $zuser['user_id'] . "**";
-							} else {
-								// Fallback to text email
-								$mentions[] = $user_email;
-							}
+						if (!isset($user_reminders[$uid])) {
+							$user_reminders[$uid] = array();
 						}
+						$user_reminders[$uid][] = $obj_item;
 					}
-					
-					$responsible_text = empty($mentions) ? "No assigned users" : implode(", ", $mentions);
-					$content = "Reminder: **" . $type . "** with ref **" . $obj->ref . "** is currently marked as late in Dolibarr.\nResponsible: " . $responsible_text;
-					$topic = "Late " . $type . ": " . $obj->ref;
-					
-					// TESTING MODE: Send direct message instead of stream
-					if ($test_messages_count < $test_messages_limit) {
-						if ($client->sendPrivateMessage($test_mode_email, $content)) {
-							$messages_sent++;
-							$test_messages_count++;
-						} else {
-							$this->error .= "Failed to send private message for $type $obj->ref. ";
-							$error++;
-						}
-					} else {
-						// Stop loop once we hit the test limit
-						break 2;
-					}
-					
-					/* PRODUCTION MODE: Uncomment this and remove the testing mode above when ready
-					if ($client->sendStreamMessage($stream, $topic, $content)) {
-						$messages_sent++;
-					} else {
-						$this->error .= "Failed to send stream message for $type $obj->ref. ";
-						$error++;
-					}
-					*/
 				}
 				$this->db->free($resql);
 			} else {
 				dol_syslog('ZulipReminderCron: Error in query for ' . $type . ' - ' . $this->db->lasterror(), LOG_ERR);
+				$error++;
+			}
+		}
+
+		// 2. Send summarized DMs to each user
+		$explanation = "**What should I do with the late objects?**\n"
+			. "- Check that everything is fine regarding the object\n"
+			. "- If applicable, change the expiry date for the object\n\n"
+			. "**Your late objects:**\n";
+
+		foreach ($user_reminders as $uid => $objects) {
+			$user_email = $this->getUserEmail($uid);
+			if (empty($user_email)) continue;
+			
+			$content = $explanation . implode("\n", $objects);
+			
+			// If testing mode is enabled, route to test email
+			$target_email = !empty($test_mode_email) ? $test_mode_email : $user_email;
+			
+			if (!empty($test_mode_email)) {
+				if ($test_messages_count >= $test_messages_limit) {
+					break; // Stop if we hit the limit in test mode
+				}
+				$content = "*(TEST MODE: Originally intended for " . $user_email . ")*\n\n" . $content;
+			}
+			
+			// Send the message as direct message
+			if ($client->sendPrivateMessage($target_email, $content)) {
+				$messages_sent++;
+				if (!empty($test_mode_email)) {
+					$test_messages_count++;
+				}
+			} else {
+				$this->error .= "Failed to send private message to $target_email. ";
 				$error++;
 			}
 		}

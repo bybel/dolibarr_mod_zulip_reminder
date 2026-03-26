@@ -159,7 +159,7 @@ class ZulipReminderCron extends CommonObject
 			}
 		}
 
-		$this->output = "Cron job executed. $messages_sent messages sent.";
+		$this->output = "Job executed. Found " . count($user_reminders) . " users with late objects. " . $error . " API errors. " . $messages_sent . " sent.";
 		dol_syslog(__METHOD__." end. " . $this->output, LOG_INFO);
 
 		return $error;

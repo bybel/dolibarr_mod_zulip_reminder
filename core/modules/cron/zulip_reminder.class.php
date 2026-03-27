@@ -62,7 +62,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Projects (PJ)
 			'Project' => array(
-				'sql' => "SELECT rowid, ref, fk_user_creat as fk_user_author FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut = 1 AND date_fin < NOW()",
+				'sql' => "SELECT rowid, ref, fk_user_creat as fk_user_author FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut = 1 AND datee < NOW()",
 				'element' => 'project',
 				'stream_var' => 'ZULIP_STREAM_PJ',
 				'url_path' => '/projet/card.php?id='

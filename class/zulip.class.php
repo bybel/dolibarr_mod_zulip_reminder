@@ -94,9 +94,14 @@ class ZulipClient
 
 		$endpoint = $this->server_url . "/api/v1/messages";
 
+		$to_array = is_array($to_emails) ? $to_emails : array($to_emails);
+		foreach ($to_array as &$item) {
+			if (is_numeric($item)) $item = (int)$item;
+		}
+
 		$data = array(
 			'type' => 'private',
-			'to' => is_array($to_emails) ? json_encode($to_emails) : $to_emails,
+			'to' => json_encode(array_values($to_array)),
 			'content' => $content
 		);
 

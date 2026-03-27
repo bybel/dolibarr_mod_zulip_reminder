@@ -27,45 +27,77 @@ class ZulipReminderCron extends CommonObject
 		$queries = array(
 			// Purchase Orders (PO)
 			'CommandeFournisseur' => array(
-				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE fk_statut IN (1,2,3,4) AND date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
 				'element' => 'order_supplier',
 				'stream_var' => 'ZULIP_STREAM_PO',
-				'url_path' => '/fourn/commande/card.php?id='
+				'url_path' => '/fourn/commande/card.php?id=',
+				'actions' => array(
+					'Mark as delivered' => '/fourn/commande/card.php?id=%s&action=classifybilled',
+					'Mark as abandoned' => '/fourn/commande/card.php?id=%s&action=cancel',
+					'Extend expiry date' => '/fourn/commande/card.php?id=%s&action=edit'
+				)
 			),
 			// Commercial Proposals (PR)
 			'Propal' => array(
-				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."propal WHERE fk_statut = 1 AND fin_validite < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."propal as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.fin_validite < NOW()",
 				'element' => 'propal',
 				'stream_var' => 'ZULIP_STREAM_PR',
-				'url_path' => '/comm/propal/card.php?id='
+				'url_path' => '/comm/propal/card.php?id=',
+				'actions' => array(
+					'Extend expiration date' => '/comm/propal/card.php?id=%s&action=edit',
+					'Mark as done/completed' => '/comm/propal/card.php?id=%s&action=close',
+					'Mark as abandoned/rejected' => '/comm/propal/card.php?id=%s&action=close'
+				)
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
-				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."commande WHERE fk_statut IN (1,2) AND date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
 				'element' => 'commande',
 				'stream_var' => 'ZULIP_STREAM_CO',
-				'url_path' => '/commande/card.php?id='
+				'url_path' => '/commande/card.php?id=',
+				'actions' => array(
+					'Mark as done/solved' => '/commande/card.php?id=%s&action=classify',
+					'Cancel/abandon' => '/commande/card.php?id=%s&action=cancel',
+					'Extend expiry date' => '/commande/card.php?id=%s&action=edit'
+				)
 			),
 			// Customer Invoices (FA)
 			'Facture' => array(
-				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'facture',
 				'stream_var' => 'ZULIP_STREAM_FA',
-				'url_path' => '/compta/facture/card.php?id='
+				'url_path' => '/compta/facture/card.php?id=',
+				'actions' => array(
+					'Send reminder email' => '/compta/facture/card.php?id=%s&action=presend',
+					'Extend expiry date' => '/compta/facture/card.php?id=%s&action=edit',
+					'Cancel FA' => '/compta/facture/card.php?id=%s&action=cancel'
+				)
 			),
 			// Supplier Invoices (SI)
 			'FactureFournisseur' => array(
-				'sql' => "SELECT rowid, ref, fk_user_author FROM ".MAIN_DB_PREFIX."facture_fourn WHERE fk_statut = 1 AND paye = 0 AND date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture_fourn as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'invoice_supplier',
 				'stream_var' => 'ZULIP_STREAM_SI',
-				'url_path' => '/fourn/facture/card.php?id='
+				'url_path' => '/fourn/facture/card.php?id=',
+				'actions' => array(
+					'Reject and inform supplier' => '/fourn/facture/card.php?id=%s&action=cancel',
+					'Pay' => '/fourn/facture/payment.php?facid=%s&action=create',
+					'Modify the date' => '/fourn/facture/card.php?id=%s&action=edit'
+				)
 			),
 			// Projects (PJ)
 			'Project' => array(
-				'sql' => "SELECT rowid, ref, fk_user_creat as fk_user_author FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut = 1 AND datee < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_creat as fk_user_author, s.nom as client_name FROM ".MAIN_DB_PREFIX."projet as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.datee < NOW()",
 				'element' => 'project',
 				'stream_var' => 'ZULIP_STREAM_PJ',
-				'url_path' => '/projet/card.php?id='
+				'url_path' => '/projet/card.php?id=',
+				'actions' => array(
+					'Extend expiry date' => '/projet/card.php?id=%s&action=edit',
+					'Mark as won/solved' => '/projet/card.php?id=%s&action=close',
+					'Mark as lost/canceled' => '/projet/card.php?id=%s&action=cancel',
+					'Cloturer le PJ' => '/projet/card.php?id=%s&action=close',
+					'Send' => '/projet/card.php?id=%s&action=presend'
+				)
 			)
 		);
 
@@ -108,8 +140,19 @@ class ZulipReminderCron extends CommonObject
 					
 					if (empty($user_ids)) continue;
 					
+					$client_suffix = (!empty($obj->client_name)) ? " (Client: " . $obj->client_name . ")" : "";
 					$obj_url = constant('DOL_MAIN_URL_ROOT') . $data['url_path'] . $obj->rowid;
-					$obj_item = "- **" . $type . "** " . $obj->ref . ": [Link](" . $obj_url . ")";
+					
+					$action_links = array();
+					if (!empty($data['actions'])) {
+						foreach ($data['actions'] as $act_name => $act_url_format) {
+							$act_full_url = constant('DOL_MAIN_URL_ROOT') . sprintf($act_url_format, $obj->rowid);
+							$action_links[] = "[" . $act_name . "](" . $act_full_url . ")";
+						}
+					}
+					$actions_text = !empty($action_links) ? " | " . implode(" | ", $action_links) : "";
+
+					$obj_item = "- **" . $type . "** " . $obj->ref . $client_suffix . ": [View](" . $obj_url . ")" . $actions_text;
 
 					foreach ($user_ids as $uid) {
 						if (!isset($user_reminders[$uid])) {

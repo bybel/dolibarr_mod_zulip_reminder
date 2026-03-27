@@ -96,7 +96,7 @@ class ZulipClient
 
 		$data = array(
 			'type' => 'private',
-			'to' => json_encode(is_array($to_emails) ? $to_emails : array($to_emails)),
+			'to' => is_array($to_emails) ? json_encode($to_emails) : $to_emails,
 			'content' => $content
 		);
 
@@ -113,7 +113,7 @@ class ZulipClient
 		curl_close($ch);
 
 		if ($httpCode == 200) {
-			dol_syslog('ZulipClient: Message successfully sent as private message. Response: ' . $response);
+			dol_syslog('ZulipClient: Message successfully sent as private message. Response: ' . $response, LOG_ERR);
 			return true;
 		} else {
 			$this->error = "Zulip API error HTTP " . $httpCode . ", Response: " . $response . ", cURL Error: " . $curlError;

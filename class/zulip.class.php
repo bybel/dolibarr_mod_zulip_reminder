@@ -113,7 +113,7 @@ class ZulipClient
 		curl_close($ch);
 
 		if ($httpCode == 200) {
-			dol_syslog('ZulipClient: Message successfully sent as private message');
+			dol_syslog('ZulipClient: Message successfully sent as private message. Response: ' . $response);
 			return true;
 		} else {
 			$this->error = "Zulip API error HTTP " . $httpCode . ", Response: " . $response . ", cURL Error: " . $curlError;

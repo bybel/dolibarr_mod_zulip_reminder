@@ -126,7 +126,9 @@ class ZulipReminderCron extends CommonObject
 		}
 
 		// 2. Send summarized DMs to each user
-		$explanation = "**What should I do with the late objects?**\n"
+		$explanation = "# Late Objects Reminder\n"
+			. "You will find below the list of late (PR, PJ, ...) that are linked to you.\n\n"
+			. "**What should I do with the late objects?**\n"
 			. "- Check that everything is fine regarding the object\n"
 			. "- If applicable, change the expiry date for the object\n\n"
 			. "**Your late objects:**\n";

@@ -57,7 +57,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 		$object = new Propal($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree($object->fin_validite, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->set_echeance($user, $new_date);
 		$field_label = 'end of validity';
 		$redirect_url = DOL_URL_ROOT.'/comm/propal/card.php?id='.$id;
@@ -67,7 +67,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 		$object = new Commande($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree($object->delivery_date, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->setDeliveryDate($user, $new_date);
 		$field_label = 'delivery date';
 		$redirect_url = DOL_URL_ROOT.'/commande/card.php?id='.$id;
@@ -77,7 +77,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
 		$object = new CommandeFournisseur($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree($object->delivery_date, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->setDeliveryDate($user, $new_date);
 		$field_label = 'delivery date';
 		$redirect_url = DOL_URL_ROOT.'/fourn/commande/card.php?id='.$id;
@@ -87,8 +87,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 		$object = new Facture($db);
 		$object->fetch($id);
-		// For invoices, extend the payment due date
-		$new_date = dol_time_plus_duree($object->date_lim_reglement, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture SET date_lim_reglement = '".$db->idate($new_date)."' WHERE rowid = ".((int)$id);
 		$result = $db->query($sql) ? 1 : -1;
 		$field_label = 'payment due date';
@@ -99,8 +98,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
 		$object = new FactureFournisseur($db);
 		$object->fetch($id);
-		// For supplier invoices, extend the payment due date
-		$new_date = dol_time_plus_duree($object->date_lim_reglement, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn SET date_lim_reglement = '".$db->idate($new_date)."' WHERE rowid = ".((int)$id);
 		$result = $db->query($sql) ? 1 : -1;
 		$field_label = 'payment due date';
@@ -111,7 +109,7 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 		$object = new Project($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree($object->date_end, $days, 'd');
+		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$object->date_end = $new_date;
 		$result = $object->update($user);
 		$field_label = 'end date';

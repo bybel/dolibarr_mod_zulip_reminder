@@ -205,12 +205,13 @@ class ZulipReminderCron extends CommonObject
 						$is_billed = isset($obj->billed) ? (int) $obj->billed : 0;
 
 						foreach ($current_actions as $act_name => $act_url_format) {
-							// Skip billed/unbilled actions based on current state
-							if ($act_name === 'Classify billed' && $is_billed) continue;
-							if ($act_name === 'Classify unbilled' && !$is_billed) continue;
+							// Annotate billed/unbilled actions with current state
+							$display_name = $act_name;
+							if ($act_name === 'Classify billed' && $is_billed) $display_name = 'Classify billed ✓';
+							if ($act_name === 'Classify unbilled' && !$is_billed) $display_name = 'Classify unbilled ✓';
 
 							$act_full_url = constant('DOL_MAIN_URL_ROOT') . str_replace(array_keys($replacements), array_values($replacements), $act_url_format);
-							$action_links[] = "[" . $act_name . "](" . $act_full_url . ")";
+							$action_links[] = "[" . $display_name . "](" . $act_full_url . ")";
 						}
 					}
 					$actions_text = !empty($action_links) ? "\n  * Actions: " . implode(" | ", $action_links) : "";

@@ -204,7 +204,7 @@ class ZulipReminderCron extends CommonObject
 							$action_links[] = "[" . $act_name . "](" . $act_full_url . ")";
 						}
 					}
-					$actions_text = !empty($action_links) ? "\n  * " . implode(" | ", $action_links) : "";
+					$actions_text = !empty($action_links) ? "\n  * Actions: " . implode(" | ", $action_links) : "";
 
 					// Build extend date sub-bullet with multiple time options
 					$extend_base = '/custom/zulipreminder/extend_date.php?element=' . $data['element'] . '&id=' . $obj->rowid . '&days=';
@@ -261,7 +261,7 @@ class ZulipReminderCron extends CommonObject
 			
 			$content = $explanation;
 			foreach ($types as $type => $objects) {
-				$content .= "\n**" . $type . "**\n";
+				$content .= "\n## " . $type . "\n";
 				$content .= implode("\n", $objects) . "\n";
 			}
 			

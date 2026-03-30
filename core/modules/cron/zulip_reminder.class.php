@@ -265,14 +265,22 @@ class ZulipReminderCron extends CommonObject
 			. "- If applicable, change the expiry date for the object\n\n"
 			. "**Your late objects:**\n";
 
+		$max_per_type = 5;
+
 		foreach ($user_reminders as $uid => $types) {
 			$user_email = $this->getUserEmail($uid);
 			if (empty($user_email)) continue;
 			
 			$content = $explanation;
 			foreach ($types as $type => $objects) {
-				$content .= "\n## " . $type . "\n";
-				$content .= implode("\n", $objects) . "\n";
+				$total = count($objects);
+				$content .= "\n## " . $type . " (" . $total . ")\n";
+				$displayed = array_slice($objects, 0, $max_per_type);
+				$content .= implode("\n", $displayed) . "\n";
+				if ($total > $max_per_type) {
+					$remaining = $total - $max_per_type;
+					$content .= "\n*... and " . $remaining . " more late " . $type . "*\n";
+				}
 			}
 			
 			// If testing mode is enabled, route to test email

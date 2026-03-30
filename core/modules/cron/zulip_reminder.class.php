@@ -265,27 +265,13 @@ class ZulipReminderCron extends CommonObject
 			. "- If applicable, change the expiry date for the object\n\n"
 			. "**Your late objects:**\n";
 
-		$max_per_type = 5;
-		$max_message_length = 9500; // Zulip limit is 10000, keep margin
+		$max_per_type = 3;
+		$max_message_length = 5000; // Safer limit to avoid truncation observed in Zulip
 
 		foreach ($user_reminders as $uid => $types) {
 			$user_email = $this->getUserEmail($uid);
 			if (empty($user_email)) continue;
 			
-			// Build content blocks per type
-			$type_blocks = array();
-			foreach ($types as $type => $objects) {
-				$total = count($objects);
-				$block = "\n## " . $type . " (" . $total . ")\n";
-				$displayed = array_slice($objects, 0, $max_per_type);
-				$block .= implode("\n", $displayed) . "\n";
-				if ($total > $max_per_type) {
-					$remaining = $total - $max_per_type;
-					$block .= "\n*... and " . $remaining . " more late " . $type . "*\n";
-				}
-				$type_blocks[] = $block;
-			}
-
 			// If testing mode is enabled, route to test email
 			$target_email = !empty($test_mode_email) ? $test_mode_email : $user_email;
 			$test_prefix = '';
@@ -296,16 +282,38 @@ class ZulipReminderCron extends CommonObject
 				$test_prefix = "*(TEST MODE: Originally intended for " . $user_email . ")*\n\n";
 			}
 
-			// Split into multiple messages if needed
+			// Split into multiple messages at the per-object level
 			$messages = array();
 			$current_msg = $test_prefix . $explanation;
-			foreach ($type_blocks as $block) {
-				if (strlen($current_msg . $block) > $max_message_length && $current_msg !== $test_prefix . $explanation) {
-					// Current message would overflow, start a new one
+			$continued_header = $test_prefix . "# Late Objects Reminder (continued)\n";
+
+			foreach ($types as $type => $objects) {
+				$total = count($objects);
+				$type_header = "\n## " . $type . " (" . $total . ")\n";
+				$displayed = array_slice($objects, 0, $max_per_type);
+				$type_footer = ($total > $max_per_type) ? "\n*... and " . ($total - $max_per_type) . " more late " . $type . "*\n" : "";
+
+				// Try to add the type header
+				if (strlen($current_msg . $type_header) > $max_message_length && $current_msg !== $test_prefix . $explanation) {
 					$messages[] = $current_msg;
-					$current_msg = $test_prefix . "# Late Objects Reminder (continued)\n";
+					$current_msg = $continued_header;
 				}
-				$current_msg .= $block;
+				$current_msg .= $type_header;
+
+				// Add objects one by one
+				foreach ($displayed as $obj_item) {
+					$item_to_add = $obj_item . "\n";
+					if (strlen($current_msg . $item_to_add) > $max_message_length && $current_msg !== $continued_header . $type_header) {
+						$messages[] = $current_msg;
+						$current_msg = $continued_header . "\n## " . $type . " (continued)\n";
+					}
+					$current_msg .= $item_to_add;
+				}
+
+				// Add footer if needed
+				if (!empty($type_footer)) {
+					$current_msg .= $type_footer;
+				}
 			}
 			$messages[] = $current_msg;
 

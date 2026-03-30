@@ -67,7 +67,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Purchase Orders (PO)
 			'CommandeFournisseur' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
 				'element' => 'order_supplier',
 				'stream_var' => 'ZULIP_STREAM_PO',
 				'url_path' => '/fourn/commande/card.php?id=',
@@ -77,14 +77,15 @@ class ZulipReminderCron extends CommonObject
 					'Re open' => '/fourn/commande/card.php?id=__ID__&action=reopen',
 					'classify received' => '/fourn/commande/card.php?id=__ID__&action=classifyreception#classifyreception',
 					'Create Invoice' => '/fourn/facture/card.php?action=create&origin=order_supplier&originid=__ID__&socid=__SOCID__',
-					'classify billed/unbilled' => '/fourn/commande/card.php?id=__ID__&action=classifybilled',
+					'Classify billed' => '/fourn/commande/card.php?id=__ID__&action=classifybilled',
+					'Classify unbilled' => '/fourn/commande/card.php?id=__ID__&action=classifyunbilled',
 					'Clone' => '/fourn/commande/card.php?id=__ID__&socid=__SOCID__&action=clone&object=order',
 					'delete' => '/fourn/commande/card.php?id=__ID__&action=delete'
 				)
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.facture as billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
 				'element' => 'commande',
 				'stream_var' => 'ZULIP_STREAM_CO',
 				'url_path' => '/commande/card.php?id=',
@@ -94,7 +95,8 @@ class ZulipReminderCron extends CommonObject
 					'Create Purchase order' => '/fourn/commande/card.php?action=create&origin=commande&originid=__ID__',
 					'Create contract' => '/contrat/card.php?action=create&origin=commande&originid=__ID__&socid=__SOCID__',
 					'Create Invoice' => '/compta/facture/card.php?action=create&origin=commande&originid=__ID__&socid=__SOCID__',
-					'Classify billed/unbilled' => '/commande/card.php?id=__ID__&action=classifybilled',
+					'Classify billed' => '/commande/card.php?id=__ID__&action=classifybilled',
+					'Classify unbilled' => '/commande/card.php?id=__ID__&action=classifyunbilled',
 					'Classify Delivered' => '/commande/card.php?id=__ID__&action=shipped',
 					'clone' => '/commande/card.php?id=__ID__&socid=__SOCID__&action=clone',
 					'cancel order' => '/commande/card.php?id=__ID__&action=cancel',
@@ -199,7 +201,14 @@ class ZulipReminderCron extends CommonObject
 						$current_actions = $data['actions'];
 					}
 					if (!empty($current_actions)) {
+						// Determine billed status for conditional actions
+						$is_billed = isset($obj->billed) ? (int) $obj->billed : 0;
+
 						foreach ($current_actions as $act_name => $act_url_format) {
+							// Skip billed/unbilled actions based on current state
+							if ($act_name === 'Classify billed' && $is_billed) continue;
+							if ($act_name === 'Classify unbilled' && !$is_billed) continue;
+
 							$act_full_url = constant('DOL_MAIN_URL_ROOT') . str_replace(array_keys($replacements), array_values($replacements), $act_url_format);
 							$action_links[] = "[" . $act_name . "](" . $act_full_url . ")";
 						}

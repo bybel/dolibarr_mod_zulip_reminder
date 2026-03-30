@@ -22,15 +22,26 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
-$element = GETPOST('element', 'aZ09_');
+$element = GETPOST('element', 'alpha');
+if (empty($element) && !empty($_GET['element'])) {
+	$element = preg_replace('/[^a-zA-Z0-9_]/', '', $_GET['element']);
+}
 $id = GETPOSTINT('id');
+if (empty($id) && !empty($_GET['id'])) {
+	$id = (int) $_GET['id'];
+}
 $days = GETPOSTINT('days');
+if (empty($days) && !empty($_GET['days'])) {
+	$days = (int) $_GET['days'];
+}
 if ($days <= 0) {
 	$days = 30; // Default: extend by 30 days
 }
 
+dol_syslog("extend_date.php called with element=".$element.", id=".$id.", days=".$days, LOG_DEBUG);
+
 if (empty($element) || empty($id)) {
-	setEventMessages('Missing parameters (element, id)', null, 'errors');
+	setEventMessages('Missing parameters (element='.$element.', id='.$id.'). Check the URL.', null, 'errors');
 	header('Location: '.DOL_URL_ROOT.'/index.php');
 	exit;
 }

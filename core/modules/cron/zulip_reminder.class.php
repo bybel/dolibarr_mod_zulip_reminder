@@ -285,7 +285,7 @@ class ZulipReminderCron extends CommonObject
 			// Split into multiple messages at the per-object level
 			$messages = array();
 			$current_msg = $test_prefix . $explanation;
-			$continued_header = $test_prefix . "# Late Objects Reminder (continued)\n";
+			$continued_header = $test_prefix . "**(continued)**\n";
 
 			foreach ($types as $type => $objects) {
 				$total = count($objects);

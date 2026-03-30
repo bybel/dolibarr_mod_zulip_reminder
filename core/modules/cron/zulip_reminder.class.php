@@ -266,42 +266,60 @@ class ZulipReminderCron extends CommonObject
 			. "**Your late objects:**\n";
 
 		$max_per_type = 5;
+		$max_message_length = 9500; // Zulip limit is 10000, keep margin
 
 		foreach ($user_reminders as $uid => $types) {
 			$user_email = $this->getUserEmail($uid);
 			if (empty($user_email)) continue;
 			
-			$content = $explanation;
+			// Build content blocks per type
+			$type_blocks = array();
 			foreach ($types as $type => $objects) {
 				$total = count($objects);
-				$content .= "\n## " . $type . " (" . $total . ")\n";
+				$block = "\n## " . $type . " (" . $total . ")\n";
 				$displayed = array_slice($objects, 0, $max_per_type);
-				$content .= implode("\n", $displayed) . "\n";
+				$block .= implode("\n", $displayed) . "\n";
 				if ($total > $max_per_type) {
 					$remaining = $total - $max_per_type;
-					$content .= "\n*... and " . $remaining . " more late " . $type . "*\n";
+					$block .= "\n*... and " . $remaining . " more late " . $type . "*\n";
 				}
+				$type_blocks[] = $block;
 			}
-			
+
 			// If testing mode is enabled, route to test email
 			$target_email = !empty($test_mode_email) ? $test_mode_email : $user_email;
-			
+			$test_prefix = '';
 			if (!empty($test_mode_email)) {
 				if ($test_messages_count >= $test_messages_limit) {
-					break; // Stop if we hit the limit in test mode
+					break;
 				}
-				$content = "*(TEST MODE: Originally intended for " . $user_email . ")*\n\n" . $content;
+				$test_prefix = "*(TEST MODE: Originally intended for " . $user_email . ")*\n\n";
 			}
-			
-			// Send the message as direct message
-			if ($client->sendPrivateMessage($target_email, $content)) {
-				$messages_sent++;
-				if (!empty($test_mode_email)) {
-					$test_messages_count++;
+
+			// Split into multiple messages if needed
+			$messages = array();
+			$current_msg = $test_prefix . $explanation;
+			foreach ($type_blocks as $block) {
+				if (strlen($current_msg . $block) > $max_message_length && $current_msg !== $test_prefix . $explanation) {
+					// Current message would overflow, start a new one
+					$messages[] = $current_msg;
+					$current_msg = $test_prefix . "# Late Objects Reminder (continued)\n";
 				}
-			} else {
-				$this->error .= "Failed to send private message to $target_email. ";
-				$error++;
+				$current_msg .= $block;
+			}
+			$messages[] = $current_msg;
+
+			// Send all message parts
+			foreach ($messages as $content) {
+				if ($client->sendPrivateMessage($target_email, $content)) {
+					$messages_sent++;
+					if (!empty($test_mode_email)) {
+						$test_messages_count++;
+					}
+				} else {
+					$this->error .= "Failed to send private message to $target_email. ";
+					$error++;
+				}
 			}
 		}
 

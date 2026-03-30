@@ -32,6 +32,7 @@ class ZulipReminderCron extends CommonObject
 				'stream_var' => 'ZULIP_STREAM_FA',
 				'url_path' => '/compta/facture/card.php?id=',
 				'actions' => array(
+					'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=facture&id=__ID__&days=30',
 					'Dept compensation' => '/custom/clientpayfourn/clientpayfournindex.php?id=__ID__',
 					'modify' => '/compta/facture/card.php?facid=__ID__&action=edit',
 					'send email' => '/compta/facture/card.php?facid=__ID__&action=presend&mode=init#formmailbeforetitle',
@@ -50,12 +51,14 @@ class ZulipReminderCron extends CommonObject
 				'url_path' => '/comm/propal/card.php?id=',
 				'actions_by_status' => array(
 					0 => array( // Draft
+						'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=propal&id=__ID__&days=30',
 						'Validate' => '/comm/propal/card.php?id=__ID__&action=validate',
 						'send email' => '/comm/propal/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 						'clone' => '/comm/propal/card.php?id=__ID__&socid=__SOCID__&action=clone&object=propal',
 						'Delete' => '/comm/propal/card.php?id=__ID__&action=delete'
 					),
 					1 => array( // Validated
+						'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=propal&id=__ID__&days=30',
 						'Modify' => '/comm/propal/card.php?id=__ID__&action=modif',
 						'send email' => '/comm/propal/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 						'set Accepted/refused' => '/comm/propal/card.php?id=__ID__&action=closeas',
@@ -72,6 +75,7 @@ class ZulipReminderCron extends CommonObject
 				'stream_var' => 'ZULIP_STREAM_PO',
 				'url_path' => '/fourn/commande/card.php?id=',
 				'actions' => array(
+					'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=order_supplier&id=__ID__&days=30',
 					'Scan invoice' => '/custom/scaninvoices/importinvoice.php?step=2&origin=order_supplier&fournID=__SOCID__&orderID=__ID__',
 					'send email' => '/fourn/commande/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'Re open' => '/fourn/commande/card.php?id=__ID__&action=reopen',
@@ -89,6 +93,7 @@ class ZulipReminderCron extends CommonObject
 				'stream_var' => 'ZULIP_STREAM_CO',
 				'url_path' => '/commande/card.php?id=',
 				'actions' => array(
+					'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=commande&id=__ID__&days=30',
 					'send email' => '/commande/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'modify' => '/commande/card.php?id=__ID__&action=modif',
 					'Create Purchase order' => '/fourn/commande/card.php?action=create&origin=commande&originid=__ID__',
@@ -108,6 +113,7 @@ class ZulipReminderCron extends CommonObject
 				'stream_var' => 'ZULIP_STREAM_SI',
 				'url_path' => '/fourn/facture/card.php?id=',
 				'actions' => array(
+					'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=invoice_supplier&id=__ID__&days=30',
 					'modify' => '/fourn/facture/card.php?id=__ID__&action=edit',
 					'send email' => '/fourn/facture/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'enter payment' => '/fourn/facture/paiement.php?facid=__ID__&action=create',
@@ -124,6 +130,7 @@ class ZulipReminderCron extends CommonObject
 				'stream_var' => 'ZULIP_STREAM_PJ',
 				'url_path' => '/projet/card.php?id=',
 				'actions' => array(
+					'Extend +30d' => '/custom/zulipreminder/extend_date.php?element=project&id=__ID__&days=30',
 					'send email' => '/projet/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'back to draft' => '/projet/card.php?id=__ID__&action=confirm_setdraft&confirm=yes',
 					'Validate' => '/projet/card.php?id=__ID__&action=validate',

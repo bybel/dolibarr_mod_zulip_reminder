@@ -178,12 +178,10 @@ class ZulipReminderCron extends CommonObject
 					
 					$action_links = array();
 					$replacements = array(
-						'__ID__' => clone_if_needed_no($obj->rowid),
+						'__ID__' => $obj->rowid,
 						'__SOCID__' => isset($obj->fk_soc) && $obj->fk_soc > 0 ? $obj->fk_soc : '',
 						'__PROJECTID__' => isset($obj->fk_projet) && $obj->fk_projet > 0 ? $obj->fk_projet : '',
 					);
-					// Local polyfill so no failure. Basically just assign since it's already an int.
-					$replacements['__ID__'] = $obj->rowid;
 					
 					if (!empty($data['actions'])) {
 						foreach ($data['actions'] as $act_name => $act_url_format) {

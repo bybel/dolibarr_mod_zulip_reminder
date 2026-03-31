@@ -27,24 +27,20 @@ class ZulipReminderCron extends CommonObject
 		$queries = array(
 			// Customer Invoices (FA)
 			'Facture' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'facture',
 				'stream_var' => 'ZULIP_STREAM_FA',
 				'url_path' => '/compta/facture/card.php?id=',
 				'actions' => array(
-					'Dept compensation' => '/custom/clientpayfourn/clientpayfournindex.php?id=__ID__',
 					'modify' => '/compta/facture/card.php?facid=__ID__&action=edit',
 					'send email' => '/compta/facture/card.php?facid=__ID__&action=presend&mode=init#formmailbeforetitle',
-					'enter payment' => '/compta/paiement.php?facid=__ID__&action=create',
-					'Classify "Abandoned"' => '/compta/facture/card.php?facid=__ID__&action=canceled',
 					'create credit note' => '/compta/facture/card.php?socid=__SOCID__&fac_avoir=__ID__&action=create&type=2',
-					'Clone' => '/compta/facture/card.php?facid=__ID__&action=clone&object=invoice',
-					'delete' => '/compta/facture/card.php?facid=__ID__&action=delete'
+					'Clone' => '/compta/facture/card.php?facid=__ID__&action=clone&object=invoice'
 				)
 			),
 			// Commercial Proposals (PR)
 			'Propal' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."propal as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (0, 1) AND c.fin_validite < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."propal as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (0, 1) AND c.fin_validite < NOW()",
 				'element' => 'propal',
 				'stream_var' => 'ZULIP_STREAM_PR',
 				'url_path' => '/comm/propal/card.php?id=',
@@ -52,60 +48,49 @@ class ZulipReminderCron extends CommonObject
 					0 => array( // Draft
 						'Validate' => '/comm/propal/card.php?id=__ID__&action=validate',
 						'send email' => '/comm/propal/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
-						'clone' => '/comm/propal/card.php?id=__ID__&socid=__SOCID__&action=clone&object=propal',
-						'Delete' => '/comm/propal/card.php?id=__ID__&action=delete'
+						'clone' => '/comm/propal/card.php?id=__ID__&socid=__SOCID__&action=clone&object=propal'
 					),
 					1 => array( // Validated
 						'Modify' => '/comm/propal/card.php?id=__ID__&action=modif',
 						'send email' => '/comm/propal/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 						'set Accepted/refused' => '/comm/propal/card.php?id=__ID__&action=closeas',
 						'cancel' => '/comm/propal/card.php?id=__ID__&action=cancel',
-						'clone' => '/comm/propal/card.php?id=__ID__&socid=__SOCID__&action=clone&object=propal',
-						'Delete' => '/comm/propal/card.php?id=__ID__&action=delete'
+						'clone' => '/comm/propal/card.php?id=__ID__&socid=__SOCID__&action=clone&object=propal'
 					)
 				)
 			),
 			// Purchase Orders (PO)
 			'CommandeFournisseur' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
 				'element' => 'order_supplier',
 				'stream_var' => 'ZULIP_STREAM_PO',
 				'url_path' => '/fourn/commande/card.php?id=',
 				'actions' => array(
-					'Scan invoice' => '/custom/scaninvoices/importinvoice.php?step=2&origin=order_supplier&fournID=__SOCID__&orderID=__ID__',
 					'send email' => '/fourn/commande/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
-					'Re open' => '/fourn/commande/card.php?id=__ID__&action=reopen',
+					'Modify' => '/fourn/commande/card.php?id=__ID__&action=reopen',
 					'classify received' => '/fourn/commande/card.php?id=__ID__&action=classifyreception#classifyreception',
 					'Create Invoice' => '/fourn/facture/card.php?action=create&origin=order_supplier&originid=__ID__&socid=__SOCID__',
-					'Classify billed' => '/fourn/commande/card.php?id=__ID__&action=classifybilled',
-					'Classify unbilled' => '/fourn/commande/card.php?id=__ID__&action=classifyunbilled',
 					'Clone' => '/fourn/commande/card.php?id=__ID__&socid=__SOCID__&action=clone&object=order',
-					'delete' => '/fourn/commande/card.php?id=__ID__&action=delete'
+					'Cancel' => '/fourn/commande/card.php?id=__ID__&action=cancel'
 				)
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.facture as billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.facture as billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
 				'element' => 'commande',
 				'stream_var' => 'ZULIP_STREAM_CO',
 				'url_path' => '/commande/card.php?id=',
 				'actions' => array(
-					'send email' => '/commande/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'modify' => '/commande/card.php?id=__ID__&action=modif',
-					'Create Purchase order' => '/fourn/commande/card.php?action=create&origin=commande&originid=__ID__',
 					'Create contract' => '/contrat/card.php?action=create&origin=commande&originid=__ID__&socid=__SOCID__',
 					'Create Invoice' => '/compta/facture/card.php?action=create&origin=commande&originid=__ID__&socid=__SOCID__',
-					'Classify billed' => '/commande/card.php?id=__ID__&action=classifybilled',
-					'Classify unbilled' => '/commande/card.php?id=__ID__&action=classifyunbilled',
 					'Classify Delivered' => '/commande/card.php?id=__ID__&action=shipped',
-					'clone' => '/commande/card.php?id=__ID__&socid=__SOCID__&action=clone',
-					'cancel order' => '/commande/card.php?id=__ID__&action=cancel',
-					'Delete' => '/commande/card.php?id=__ID__&action=delete'
+					'cancel order' => '/commande/card.php?id=__ID__&action=cancel'
 				)
 			),
 			// Supplier Invoices (SI)
 			'FactureFournisseur' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture_fourn as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture_fourn as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'invoice_supplier',
 				'stream_var' => 'ZULIP_STREAM_SI',
 				'url_path' => '/fourn/facture/card.php?id=',
@@ -114,32 +99,30 @@ class ZulipReminderCron extends CommonObject
 					'send email' => '/fourn/facture/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
 					'enter payment' => '/fourn/facture/paiement.php?facid=__ID__&action=create',
 					'classify "Abandoned"' => '/fourn/facture/card.php?id=__ID__&action=canceled',
-					'create credit note' => '/fourn/facture/card.php?socid=__SOCID__&fac_avoir=__ID__&action=create&type=2',
-					'clone' => '/fourn/facture/card.php?id=__ID__&action=clone&socid=__SOCID__',
-					'Delete' => '/fourn/facture/card.php?id=__ID__&action=delete'
+					'create credit note' => '/fourn/facture/card.php?socid=__SOCID__&fac_avoir=__ID__&action=create&type=2'
 				)
 			),
 			// Projects (PJ)
 			'Project' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_creat as fk_user_author, c.fk_soc, c.fk_statut, s.nom as client_name FROM ".MAIN_DB_PREFIX."projet as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.fk_statut = 1 AND c.datee < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_creat as fk_user_author, c.fk_soc, c.fk_statut, s.nom as client_name FROM ".MAIN_DB_PREFIX."projet as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (0, 1) AND c.datee < NOW()",
 				'element' => 'project',
 				'stream_var' => 'ZULIP_STREAM_PJ',
 				'url_path' => '/projet/card.php?id=',
-				'actions' => array(
-					'send email' => '/projet/card.php?id=__ID__&action=presend&mode=init#formmailbeforetitle',
-					'back to draft' => '/projet/card.php?id=__ID__&action=confirm_setdraft&confirm=yes',
-					'Validate' => '/projet/card.php?id=__ID__&action=validate',
-					'Modify' => '/projet/card.php?id=__ID__&action=edit',
-					'Close' => '/projet/card.php?id=__ID__&action=close',
-					'Create order' => '/commande/card.php?action=create&projectid=__ID__&socid=__SOCID__',
-					'Create Proposal' => '/comm/propal/card.php?action=create&projectid=__ID__&socid=__SOCID__',
-					'Create invoice' => '/compta/facture/card.php?action=create&projectid=__ID__&socid=__SOCID__',
-					'Create purchase order' => '/fourn/commande/card.php?action=create&projectid=__ID__',
-					'Create vendor invoice' => '/fourn/facture/card.php?action=create&projectid=__ID__',
-					'Create contract' => '/contrat/card.php?action=create&projectid=__ID__&socid=__SOCID__',
-					'Create expense report' => '/expensereport/card.php?action=create&projectid=__ID__&socid=__SOCID__',
-					'Clone' => '/projet/card.php?id=__ID__&action=clone',
-					'Delete' => '/projet/card.php?id=__ID__&action=delete'
+				'actions_by_status' => array(
+					0 => array( // Draft
+						'Validate' => '/projet/card.php?id=__ID__&action=validate',
+						'Modify' => '/projet/card.php?id=__ID__&action=edit',
+						'Create Proposal' => '/comm/propal/card.php?action=create&projectid=__ID__&socid=__SOCID__',
+						'Create invoice' => '/compta/facture/card.php?action=create&projectid=__ID__&socid=__SOCID__',
+						'Create contract' => '/contrat/card.php?action=create&projectid=__ID__&socid=__SOCID__'
+					),
+					1 => array( // Open
+						'Modify' => '/projet/card.php?id=__ID__&action=edit',
+						'Close' => '/projet/card.php?id=__ID__&action=close',
+						'Create Proposal' => '/comm/propal/card.php?action=create&projectid=__ID__&socid=__SOCID__',
+						'Create invoice' => '/compta/facture/card.php?action=create&projectid=__ID__&socid=__SOCID__',
+						'Create contract' => '/contrat/card.php?action=create&projectid=__ID__&socid=__SOCID__'
+					)
 				)
 			)
 		);
@@ -228,6 +211,19 @@ class ZulipReminderCron extends CommonObject
 					foreach ($extend_options as $label => $d) {
 						$extend_links[] = '[' . $label . '](' . constant('DOL_MAIN_URL_ROOT') . $extend_base . $d . ')';
 					}
+					
+					// Add 'Custom' link to date extension (points to modify page)
+					$modify_url = '';
+					foreach ($current_actions as $act_name => $act_url_format) {
+						if (strtolower($act_name) === 'modify') {
+							$modify_url = constant('DOL_MAIN_URL_ROOT') . str_replace(array_keys($replacements), array_values($replacements), $act_url_format);
+							break;
+						}
+					}
+					if ($modify_url) {
+						$extend_links[] = '[Custom](' . $modify_url . ')';
+					}
+
 					$extend_text = "\n  * Extend date (today+): " . implode(' | ', $extend_links);
 
 					$amount_text = "";
@@ -265,7 +261,7 @@ class ZulipReminderCron extends CommonObject
 			. "- If applicable, change the expiry date for the object\n\n"
 			. "**Your late objects:**\n";
 
-		$max_per_type = 3;
+		// $max_per_type logic removed, all objects will be sent
 		$max_message_length = 5000; // Safer limit to avoid truncation observed in Zulip
 
 		foreach ($user_reminders as $uid => $types) {
@@ -290,8 +286,8 @@ class ZulipReminderCron extends CommonObject
 			foreach ($types as $type => $objects) {
 				$total = count($objects);
 				$type_header = "\n## " . $type . " (" . $total . ")\n";
-				$displayed = array_slice($objects, 0, $max_per_type);
-				$type_footer = ($total > $max_per_type) ? "\n*... and " . ($total - $max_per_type) . " more late " . $type . "*\n" : "";
+				$displayed = $objects; // Remove limit, display all
+				$type_footer = ""; // No footer needed as all are displayed
 
 				// Try to add the type header
 				if (strlen($current_msg . $type_header) > $max_message_length && $current_msg !== $test_prefix . $explanation) {

@@ -128,7 +128,7 @@ class ZulipReminderCron extends CommonObject
 		);
 
 		$messages_sent = 0;
-		$test_mode_email = 89; // send to my DMs for testing. Set to empty '' for production.
+		$test_mode_email = ''; // Set to empty '' for production.
 		$test_messages_limit = 5; 
 		$test_messages_count = 0;
 

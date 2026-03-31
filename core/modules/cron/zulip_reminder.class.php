@@ -200,7 +200,7 @@ class ZulipReminderCron extends CommonObject
 					$actions_text = !empty($action_links) ? "\n  * Actions: " . implode(" | ", $action_links) : "";
 
 					// Build extend date sub-bullet with multiple time options
-					$extend_base = '/custom/zulipreminder/extend_date.php?element=' . $data['element'] . '&id=' . $obj->rowid . '&days=';
+					$extend_base_url = '/custom/zulipreminder/extend_date.php?element=' . $data['element'] . '&id=' . $obj->rowid;
 					$extend_options = array(
 						'1 week' => 7,
 						'2 weeks' => 14,
@@ -209,20 +209,11 @@ class ZulipReminderCron extends CommonObject
 					);
 					$extend_links = array();
 					foreach ($extend_options as $label => $d) {
-						$extend_links[] = '[' . $label . '](' . constant('DOL_MAIN_URL_ROOT') . $extend_base . $d . ')';
+						$extend_links[] = '[' . $label . '](' . constant('DOL_MAIN_URL_ROOT') . $extend_base_url . '&days=' . $d . ')';
 					}
 					
-					// Add 'Custom' link to date extension (points to modify page)
-					$modify_url = '';
-					foreach ($current_actions as $act_name => $act_url_format) {
-						if (strtolower($act_name) === 'modify') {
-							$modify_url = constant('DOL_MAIN_URL_ROOT') . str_replace(array_keys($replacements), array_values($replacements), $act_url_format);
-							break;
-						}
-					}
-					if ($modify_url) {
-						$extend_links[] = '[Custom](' . $modify_url . ')';
-					}
+					// Add 'Custom' link pointing to our custom date extension UI
+					$extend_links[] = '[Custom](' . constant('DOL_MAIN_URL_ROOT') . $extend_base_url . '&action=custom)';
 
 					$extend_text = "\n  * Extend date (today+): " . implode(' | ', $extend_links);
 

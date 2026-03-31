@@ -35,21 +35,45 @@ if (empty($days) && !empty($_GET['days'])) {
 	$days = (int) $_GET['days'];
 }
 if ($days <= 0) {
-	$days = 30; // Default: extend by 30 days
+$action = GETPOST('action', 'aZ09');
+
+if ($action == 'custom') {
+	llxHeader('', 'Extend Date');
+	print load_fiche_titre('Custom Date Extension');
+	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="action" value="set_custom_date">';
+	print '<input type="hidden" name="element" value="'.$element.'">';
+	print '<input type="hidden" name="id" value="'.$id.'">';
+	
+	require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+	$form = new Form($db);
+	print '<table class="border" width="100%"><tr><td class="titlefield">Select new date</td><td>';
+	print $form->selectDate('', 'custom_date', 0, 0, 0, "custom_form", 1, 1);
+	print '</td></tr></table>';
+	
+	print '<div class="center"><br><input type="submit" class="button" value="Extend Date"></div>';
+	print '</form>';
+	llxFooter();
+	exit;
 }
 
-dol_syslog("extend_date.php called with element=".$element.", id=".$id.", days=".$days, LOG_DEBUG);
-
-if (empty($element) || empty($id)) {
-	setEventMessages('Missing parameters (element='.$element.', id='.$id.'). Check the URL.', null, 'errors');
-	header('Location: '.DOL_URL_ROOT.'/index.php');
-	exit;
+$new_date = null;
+if ($action == 'set_custom_date') {
+	$new_date = dol_mktime(12, 0, 0, GETPOSTINT('custom_datemonth'), GETPOSTINT('custom_dateday'), GETPOSTINT('custom_dateyear'));
+	if (empty($new_date)) {
+		setEventMessages('Invalid date', null, 'errors');
+		header('Location: '.$_SERVER["PHP_SELF"].'?action=custom&element='.$element.'&id='.$id);
+		exit;
+	}
+} else {
+	if ($days <= 0) $days = 30; // Default: extend by 30 days
+	$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 }
 
 $error = 0;
 $redirect_url = '';
 $object = null;
-$new_date = null;
 $field_label = '';
 
 switch ($element) {
@@ -57,7 +81,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 		$object = new Propal($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->set_echeance($user, $new_date);
 		$field_label = 'end of validity';
 		$redirect_url = DOL_URL_ROOT.'/comm/propal/card.php?id='.$id;
@@ -67,7 +90,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 		$object = new Commande($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->setDeliveryDate($user, $new_date);
 		$field_label = 'delivery date';
 		$redirect_url = DOL_URL_ROOT.'/commande/card.php?id='.$id;
@@ -77,7 +99,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
 		$object = new CommandeFournisseur($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$result = $object->setDeliveryDate($user, $new_date);
 		$field_label = 'delivery date';
 		$redirect_url = DOL_URL_ROOT.'/fourn/commande/card.php?id='.$id;
@@ -87,7 +108,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 		$object = new Facture($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture SET date_lim_reglement = '".$db->idate($new_date)."' WHERE rowid = ".((int)$id);
 		$result = $db->query($sql) ? 1 : -1;
 		$field_label = 'payment due date';
@@ -98,7 +118,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
 		$object = new FactureFournisseur($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn SET date_lim_reglement = '".$db->idate($new_date)."' WHERE rowid = ".((int)$id);
 		$result = $db->query($sql) ? 1 : -1;
 		$field_label = 'payment due date';
@@ -109,7 +128,6 @@ switch ($element) {
 		require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 		$object = new Project($db);
 		$object->fetch($id);
-		$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 		$object->date_end = $new_date;
 		$result = $object->update($user);
 		$field_label = 'end date';

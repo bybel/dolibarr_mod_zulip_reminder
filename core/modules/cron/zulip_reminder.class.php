@@ -225,7 +225,7 @@ class ZulipReminderCron extends CommonObject
 						$amount_text = " - " . price($obj->total_ht, 0, $langs) . " " . $currency_suffix;
 					}
 
-					$obj_item = "- " . $obj->ref . $client_suffix . $amount_text . ": [View](" . $obj_url . ")" . $actions_text . $extend_text;
+					$obj_item = "- " . $obj->ref . $client_suffix . $amount_text . $actions_text . $extend_text;
 
 					foreach ($user_ids as $uid) {
 						if (!isset($user_reminders[$uid])) {

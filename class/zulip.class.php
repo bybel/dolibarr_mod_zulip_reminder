@@ -163,4 +163,37 @@ class ZulipClient
 	{
 		return $this->error;
 	}
+
+	/**
+	 * Get all users from Zulip
+	 * 
+	 * @return array|bool Array of user objects or false on failure
+	 */
+	public function getAllUsers()
+	{
+		if (empty($this->server_url) || empty($this->bot_email) || empty($this->bot_api_key)) {
+			return false;
+		}
+
+		$endpoint = $this->server_url . "/api/v1/users";
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $endpoint);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_USERPWD, $this->bot_email . ":" . $this->bot_api_key);
+		
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($httpCode == 200) {
+			$data = json_decode($response, true);
+			if (isset($data['result']) && $data['result'] == 'success' && isset($data['members'])) {
+				return $data['members'];
+			}
+		} else {
+			dol_syslog('ZulipClient: Failed to fetch users HTTP ' . $httpCode, LOG_ERR);
+		}
+		return false;
+	}
 }

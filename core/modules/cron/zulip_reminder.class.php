@@ -128,7 +128,7 @@ class ZulipReminderCron extends CommonObject
 		);
 
 		$messages_sent = 0;
-		$test_mode_email = ''; // Set to empty '' for production.
+		$test_mode_email = 'raphael.flueckiger@resilio-solutions.com'; // Set to empty '' for production.
 		$test_messages_limit = 5; 
 		$test_messages_count = 0;
 
@@ -252,15 +252,46 @@ class ZulipReminderCron extends CommonObject
 			. "- If applicable, change the expiry date for the object\n\n"
 			. "**Your late objects:**\n";
 
-		// $max_per_type logic removed, all objects will be sent
+		// Fetch all Zulip users mapping
+		$zulip_email_to_id = array();
+		$zulip_users = $client->getAllUsers();
+		if ($zulip_users) {
+			foreach ($zulip_users as $zu) {
+				if (!empty($zu['email'])) {
+					$zulip_email_to_id[strtolower(trim($zu['email']))] = $zu['user_id'];
+				}
+				if (!empty($zu['delivery_email'])) {
+					$zulip_email_to_id[strtolower(trim($zu['delivery_email']))] = $zu['user_id'];
+				}
+			}
+			
+			// Auto-map test_mode_email if it's a string
+			if (!empty($test_mode_email) && !is_numeric($test_mode_email)) {
+				$clean_test = strtolower(trim($test_mode_email));
+				if (isset($zulip_email_to_id[$clean_test])) {
+					$test_mode_email = (int) $zulip_email_to_id[$clean_test];
+					dol_syslog('ZulipReminderCron: Auto-mapped test email to Zulip ID ' . $test_mode_email);
+				}
+			}
+		} else {
+			dol_syslog('ZulipReminderCron: Warning, could not fetch Zulip user map. Falling back to raw email.', LOG_WARNING);
+		}
+
 		$max_message_length = 5000; // Safer limit to avoid truncation observed in Zulip
 
 		foreach ($user_reminders as $uid => $types) {
 			$user_email = $this->getUserEmail($uid);
 			if (empty($user_email)) continue;
-			
+
+			// Map Dolibarr email to exact Zulip integer ID if possible
+			$mapped_target = $user_email;
+			$clean_email = strtolower(trim($user_email));
+			if (isset($zulip_email_to_id[$clean_email])) {
+				$mapped_target = (int) $zulip_email_to_id[$clean_email];
+			}
+
 			// If testing mode is enabled, route to test email
-			$target_email = !empty($test_mode_email) ? $test_mode_email : $user_email;
+			$target_email = !empty($test_mode_email) ? $test_mode_email : $mapped_target;
 			$test_prefix = '';
 			if (!empty($test_mode_email)) {
 				if ($test_messages_count >= $test_messages_limit) {

@@ -35,41 +35,49 @@ if (empty($days) && !empty($_GET['days'])) {
 	$days = (int) $_GET['days'];
 }
 if ($days <= 0) {
-$action = GETPOST('action', 'aZ09');
-
-if ($action == 'custom') {
-	llxHeader('', 'Extend Date');
-	print load_fiche_titre('Custom Date Extension');
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
-	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="set_custom_date">';
-	print '<input type="hidden" name="element" value="'.$element.'">';
-	print '<input type="hidden" name="id" value="'.$id.'">';
-	
-	require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-	$form = new Form($db);
-	print '<table class="border" width="100%"><tr><td class="titlefield">Select new date</td><td>';
-	print $form->selectDate('', 'custom_date', 0, 0, 0, "custom_form", 1, 1);
-	print '</td></tr></table>';
-	
-	print '<div class="center"><br><input type="submit" class="button" value="Extend Date"></div>';
-	print '</form>';
-	llxFooter();
-	exit;
+	$days = 30; // Default: extend by 30 days
 }
 
-$new_date = null;
-if ($action == 'set_custom_date') {
-	$new_date = dol_mktime(12, 0, 0, GETPOSTINT('custom_datemonth'), GETPOSTINT('custom_dateday'), GETPOSTINT('custom_dateyear'));
-	if (empty($new_date)) {
-		setEventMessages('Invalid date', null, 'errors');
-		header('Location: '.$_SERVER["PHP_SELF"].'?action=custom&element='.$element.'&id='.$id);
+$action = GETPOST('action', 'aZ09');
+// If 'goto_pencil' is requested, generate a fresh CSRF token for the currently authenticated User session
+// and redirect them into Dolibarr's native inline date editor for the target object.
+if ($action == 'custom') {
+	$token = newToken();
+	$url = '';
+
+	switch ($element) {
+		case 'propal':
+			$url = DOL_URL_ROOT.'/comm/propal/card.php?id='.$id.'&action=editecheance&token='.$token;
+			break;
+		case 'commande':
+			$url = DOL_URL_ROOT.'/commande/card.php?id='.$id.'&action=editdate_livraison&token='.$token;
+			break;
+		case 'order_supplier':
+			$url = DOL_URL_ROOT.'/fourn/commande/card.php?id='.$id.'&action=editdate_livraison&token='.$token;
+			break;
+		case 'facture':
+			$url = DOL_URL_ROOT.'/compta/facture/card.php?facid='.$id.'&action=editpaymentterm&token='.$token;
+			break;
+		case 'invoice_supplier':
+			$url = DOL_URL_ROOT.'/fourn/facture/card.php?id='.$id.'&action=editdate_lim_reglement&token='.$token;
+			break;
+		case 'project':
+			$url = DOL_URL_ROOT.'/projet/card.php?id='.$id.'&action=edit&token='.$token;
+			break;
+	}
+
+	if ($url) {
+		header('Location: '.$url);
+		exit;
+	} else {
+		setEventMessages('Unknown element type for inline edit: '.$element, null, 'errors');
+		header('Location: '.DOL_URL_ROOT.'/index.php');
 		exit;
 	}
-} else {
-	if ($days <= 0) $days = 30; // Default: extend by 30 days
-	$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 }
+
+if ($days <= 0) $days = 30; // Default: extend by 30 days
+$new_date = dol_time_plus_duree(dol_now(), $days, 'd');
 
 $error = 0;
 $redirect_url = '';

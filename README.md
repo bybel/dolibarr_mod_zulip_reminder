@@ -32,6 +32,4 @@ Currently, the cron task monitors the following Dolibarr elements and determines
 - **Purchase Orders / Commande Fournisseur (PO)**
 - **Supplier Invoices / Facture Fournisseur (SI)**
 
-## Module Builder Tool
-This module includes the `modulebuilder.txt` flag, indicating that it is compatible with and structured to be managed by the official Dolibarr Module Builder developer tool.
 

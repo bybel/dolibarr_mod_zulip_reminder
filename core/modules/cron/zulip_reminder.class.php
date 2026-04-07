@@ -21,13 +21,15 @@ class ZulipReminderCron extends CommonObject
 		$this->error = '';
 
 		dol_syslog(__METHOD__." start", LOG_INFO);
-		
+
 		$client = new ZulipClient();
-		
+
+		$entity_id = (int) getDolGlobalInt('ZULIP_ENTITY_ID', 1);
+
 		$queries = array(
 			// Customer Invoices (FA)
 			'Facture' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'facture',
 				'stream_var' => 'ZULIP_STREAM_FA',
 				'url_path' => '/compta/facture/card.php?id=',
@@ -40,7 +42,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Commercial Proposals (PR)
 			'Propal' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."propal as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (0, 1) AND c.fin_validite < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."propal as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut IN (0, 1) AND c.fin_validite < NOW()",
 				'element' => 'propal',
 				'stream_var' => 'ZULIP_STREAM_PR',
 				'url_path' => '/comm/propal/card.php?id=',
@@ -61,7 +63,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Purchase Orders (PO)
 			'CommandeFournisseur' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande_fournisseur as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut IN (1,2,3,4) AND c.date_livraison < NOW()",
 				'element' => 'order_supplier',
 				'stream_var' => 'ZULIP_STREAM_PO',
 				'url_path' => '/fourn/commande/card.php?id=',
@@ -76,7 +78,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Customer Orders (CO)
 			'Commande' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.facture as billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.facture as billed, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."commande as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut IN (1,2) AND c.date_livraison < NOW()",
 				'element' => 'commande',
 				'stream_var' => 'ZULIP_STREAM_CO',
 				'url_path' => '/commande/card.php?id=',
@@ -90,7 +92,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Supplier Invoices (SI)
 			'FactureFournisseur' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture_fourn as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_author, c.fk_soc, c.fk_projet, c.fk_statut, c.total_ht, c.multicurrency_total_ht, c.multicurrency_code, s.nom as client_name FROM ".MAIN_DB_PREFIX."facture_fourn as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut = 1 AND c.paye = 0 AND c.date_lim_reglement < NOW()",
 				'element' => 'invoice_supplier',
 				'stream_var' => 'ZULIP_STREAM_SI',
 				'url_path' => '/fourn/facture/card.php?id=',
@@ -104,7 +106,7 @@ class ZulipReminderCron extends CommonObject
 			),
 			// Projects (PJ)
 			'Project' => array(
-				'sql' => "SELECT c.rowid, c.ref, c.fk_user_creat as fk_user_author, c.fk_soc, c.fk_statut, s.nom as client_name FROM ".MAIN_DB_PREFIX."projet as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = 1 AND c.fk_statut IN (0, 1) AND c.datee < NOW()",
+				'sql' => "SELECT c.rowid, c.ref, c.fk_user_creat as fk_user_author, c.fk_soc, c.fk_statut, s.nom as client_name FROM ".MAIN_DB_PREFIX."projet as c LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON c.fk_soc = s.rowid WHERE c.entity = $entity_id AND c.fk_statut IN (0, 1) AND c.datee < NOW()",
 				'element' => 'project',
 				'stream_var' => 'ZULIP_STREAM_PJ',
 				'url_path' => '/projet/card.php?id=',

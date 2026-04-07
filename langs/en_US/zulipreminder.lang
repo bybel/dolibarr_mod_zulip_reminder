@@ -18,3 +18,5 @@ ZULIP_STREAM_SI=Stream for Supplier Invoices
 ZULIP_STREAM_SITooltip=Zulip stream for Supplier Invoice reminders (e.g. Accounting)
 ZULIP_STREAM_PJ=Stream for Projects
 ZULIP_STREAM_PJTooltip=Zulip stream for Project reminders (e.g. Projects)
+ZULIP_ENTITY_ID=Entity to monitor
+ZULIP_ENTITY_IDTooltip=Select which company/entity late objects should be fetched from (multicompany setup)

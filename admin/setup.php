@@ -29,6 +29,23 @@ if (!class_exists('FormSetup')) {
 }
 $formSetup = new FormSetup($db);
 
+// Build entity options from llx_entity table
+$entity_options = array();
+$sql_entities = "SELECT rowid, label FROM ".MAIN_DB_PREFIX."entity WHERE active = 1 ORDER BY rowid ASC";
+$resql_entities = $db->query($sql_entities);
+if ($resql_entities) {
+	while ($obj_entity = $db->fetch_object($resql_entities)) {
+		$entity_options[$obj_entity->rowid] = $obj_entity->label . ' (ID: ' . $obj_entity->rowid . ')';
+	}
+	$db->free($resql_entities);
+}
+if (empty($entity_options)) {
+	$entity_options[1] = 'Default (ID: 1)';
+}
+
+$item = $formSetup->newItem('ZULIP_ENTITY_ID');
+$item->setAsSelect($entity_options);
+
 $item = $formSetup->newItem('ZULIP_SERVER_URL');
 $item->fieldParams['isMandatory'] = 1;
 $item->fieldAttr['placeholder'] = 'https://your-domain.zulipchat.com';
